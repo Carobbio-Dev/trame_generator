@@ -1,5 +1,5 @@
 import { createSocket } from 'dgram';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { isIPv4 } from 'net';
 import express from "express";
 import cors from "cors";
@@ -13,39 +13,54 @@ export class FrameGenerator {
    * @param {string} configPath - chemin vers le fichier JSON de description
    */
   constructor(configPath) {
-    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-
-    this.fileName = configPath.split('/')[configPath.split('/').length -1];
-    this.port = config.port;
-    this.mode = config.mode || 'unicast';
-    this.destination = config.destination || '127.0.0.1';
-    this.periodMs = config.period_ms || 100;
-    this.fields = config.fields;
-    this.frameLength = 0;
     this.running = false;
     this.timer = null;
-
-    // Valeurs courantes (initialisées depuis la config)
-    this.currentValues = {};
 
     // Socket UDP
     this.socket = null;
 
-    this._init();
+    this.loadConfig(configPath);
+
+    //Exécuter l'API
+    this.startHttpApi();
   }
 
   /**
-   * Initialise les valeurs courantes et calcule la longueur totale de la trame.
+   * Charge et initialise la configuration depuis un fichier JSON.
+   * @param {string} configPath - chemin vers le fichier JSON
    */
-  _init() {
+  loadConfig(configPath) {
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+
+    this.configPath = configPath;
+    this.fileName = path.basename(configPath);
+    this.port = config.port;
+    this.mode = config.mode || 'unicast';
+    this.destination = config.destination || '127.0.0.1';
+    this.periodMs = config.period_ms || 100;
+    this.fields = config.fields || [];
+    this.frameLength = 0;
+    this.currentValues = {};
+
     // Longueur totale de la trame = offset du dernier champ + sa longueur
     for (const f of this.fields) {
       this.frameLength = Math.max(this.frameLength, f.offset + f.length);
       this.currentValues[f.name] = f.value;
     }
 
-    //Exécuter l'API
-    this.startHttpApi()
+    if (this.running && this.timer) {
+      clearInterval(this.timer);
+      this.timer = setInterval(() => this.sendFrame(), this.periodMs);
+    }
+  }
+
+  /**
+   * Obsoleter _init (compatibilité)
+   */
+  _init() {
+    if (this.configPath) {
+      this.loadConfig(this.configPath);
+    }
   }
 
   /**
@@ -289,11 +304,77 @@ export class FrameGenerator {
     
     app.use(cors());
     //app.use(express.json());
+    app.get('/api/v1/templates', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      try {
+        const templateDir = path.join(__dirname, 'template');
+        if (!existsSync(templateDir)) {
+          res.statusCode = 200;
+          return res.end(JSON.stringify({ success: "ok", templates: [] }));
+        }
+        const files = readdirSync(templateDir).filter(file => file.endsWith('.json'));
+        res.statusCode = 200;
+        res.end(JSON.stringify({ success: "ok", templates: files }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
     app.get('/api/v1/filename', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.statusCode = 200;
       res.end(JSON.stringify({ success: "ok", fileName: this.fileName }));
     });
+
+    const handleLoadConfig = (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body || '{}');
+          const requestedFile = data.fileName || data.filename || data.template || data.configPath;
+          if (!requestedFile) {
+            res.statusCode = 400;
+            return res.end(JSON.stringify({ success: false, error: 'Nom de fichier manquant' }));
+          }
+
+          const sanitizedFile = path.basename(requestedFile);
+          const templateDir = path.join(__dirname, 'template');
+          const targetPath = path.join(templateDir, sanitizedFile);
+
+          if (!existsSync(targetPath)) {
+            res.statusCode = 404;
+            return res.end(JSON.stringify({ success: false, error: 'Fichier introuvable' }));
+          }
+
+          const wasRunning = this.running;
+          if (wasRunning) {
+            this.stop();
+          }
+
+          this.loadConfig(targetPath);
+
+          if (wasRunning) {
+            this.start();
+          }
+
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: "ok",
+            fileName: this.fileName,
+            fields: this.getFields()
+          }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+    };
+
+    app.post('/api/v1/load-config', handleLoadConfig);
+    app.post('/api/v1/load', handleLoadConfig);
     app.get('/api/v1/generatorstate', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.statusCode = 200;

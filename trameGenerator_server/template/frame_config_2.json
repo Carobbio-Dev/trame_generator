@@ -1,0 +1,28 @@
+{
+  "port": 6001,
+  "mode": "unicast",
+  "destination": "127.0.0.1",
+  "period_ms": 500,
+  "endianness_default": "big",
+  "fields": [
+    {
+      "name": "sensor_id",
+      "offset": 0,
+      "length": 4,
+      "type": "string",
+      "value": "ALT2",
+      "editable": true,
+      "description": "Identifiant alternatif"
+    },
+    {
+      "name": "frame_validity",
+      "offset": 4,
+      "length": 4,
+      "type": "boolean",
+      "endianness": "big",
+      "value": 1,
+      "editable": true,
+      "description": "Validité (0 ou 1)"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import SlideBar  from "./SlideBar";
 export default function TrameGenerator() {
 
   const [fileTitle, setFileTitle] = useState("");
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generatorMessage, setgeneratorMessage] = useState(localStorage.getItem("generatorMessage") || "N/A");
@@ -20,11 +21,12 @@ export default function TrameGenerator() {
   useEffect(() => {
     async function loadAllData() {
       try {
-        const [resTitle, resState, resFields] = await Promise.all(
+        const [resTitle, resState, resFields, resTemplates] = await Promise.all(
           [
             fetch("http://localhost:5050/api/v1/filename"),
             fetch("http://localhost:5050/api/v1/generatorstate"),
-            fetch("http://localhost:5050/api/v1/fields")
+            fetch("http://localhost:5050/api/v1/fields"),
+            fetch("http://localhost:5050/api/v1/templates")
           ]
         ) 
         if(!resTitle.ok) throw new Error(`Erreur Filename HTTP: ${resTitle.status}`);
@@ -36,6 +38,17 @@ export default function TrameGenerator() {
         const dataFields = await resFields.json();
 
         setFileTitle(dataFileName.fileName);
+
+        if (resTemplates.ok) {
+          const dataTemplates = await resTemplates.json();
+          let tList = dataTemplates.templates || [];
+          if (dataFileName.fileName && !tList.includes(dataFileName.fileName)) {
+            tList = [dataFileName.fileName, ...tList];
+          }
+          setTemplates(tList);
+        } else {
+          setTemplates([dataFileName.fileName]);
+        }
 
         if(dataState.running){
           setGeneratorState(1);
@@ -56,6 +69,35 @@ export default function TrameGenerator() {
     }
     loadAllData();
   },[]);
+
+  async function handleSelectTemplate(selectedFileName) {
+    try {
+      const response = await fetch("http://localhost:5050/api/v1/load-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: selectedFileName })
+      });
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP lors du changement de template: ${response.status}`);
+      }
+      const result = await response.json();
+      if (result.fileName) {
+        setFileTitle(result.fileName);
+      }
+      if (result.fields) {
+        setFields(result.fields);
+      } else {
+        const fieldsRes = await fetch("http://localhost:5050/api/v1/fields");
+        if (fieldsRes.ok) {
+          const newFields = await fieldsRes.json();
+          setFields(newFields);
+        }
+      }
+      setFieldUpdate({});
+    } catch (err) {
+      setError(err);
+    }
+  }
 
   async function handleClickStart() {
     try {
@@ -132,10 +174,26 @@ export default function TrameGenerator() {
   return (
     <div className="h-screen flex flex-col overflow-hidden p-1">
       <div className="h-[225px] shrink-0">
-        <div className="w-full flex flex-row p-1">
-          <h1 className="mr-1 font-bold underline">Nom du fichier de desciption de trame: </h1>
-          <p>{fileTitle}</p>
-          <ThemeToogle />
+        <div className="w-full flex flex-row items-center p-1">
+          <h1 className="mr-2 font-bold underline">Nom du fichier de desciption de trame: </h1>
+          {templates.length > 0 ? (
+            <select
+              value={fileTitle}
+              onChange={(e) => handleSelectTemplate(e.target.value)}
+              className="bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded px-2 py-1 text-sm font-semibold text-black dark:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {templates.map((tpl) => (
+                <option key={tpl} value={tpl}>
+                  {tpl}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p>{fileTitle}</p>
+          )}
+          <div className="ml-auto">
+            <ThemeToogle />
+          </div>
         </div>
         <hr className="m-2 border-gray-500 border-1" />
         <div className="w-full flex flex-col">
@@ -160,9 +218,13 @@ export default function TrameGenerator() {
             <div>
               <div className="mt-3 w-max flex flex-col p-1">
                 <h1 className="mr-1 font-bold underline">Etat de la modification de champ: </h1>
-                <div className="flex flex-row">
-                  <p className="font-semibold mr-1">{`${fieldUpdate.field}`}</p> <p> mis à jour!</p>
-                </div>
+                {fieldUpdate && fieldUpdate.field ? (
+                  <div className="flex flex-row">
+                    <p className="font-semibold mr-1">{`${fieldUpdate.field}`}</p> <p> mis à jour!</p>
+                  </div>
+                ) : (
+                  <p>-</p>
+                )}
               </div>
             </div>
           </div>
