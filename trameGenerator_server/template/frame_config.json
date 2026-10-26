@@ -1,0 +1,109 @@
+{
+  "port": 6000,
+  "mode": "multicast",
+  "destination": "239.255.0.1",
+  "period_ms": 1000,
+  "endianness_default": "big",
+  "fields": [
+    {
+      "name": "sensor_id",
+      "offset": 0,
+      "length": 4,
+      "type": "string",
+      "value": "SCA1",
+      "editable": true,
+      "description": "Identifiant (4 caractères)"
+    },
+    {
+      "name": "frame_validity",
+      "offset": 4,
+      "length": 4,
+      "type": "boolean",
+      "endianness": "big",
+      "value": 1,
+      "editable": true,
+      "description": "Validité trame (0 ou 1)"
+    },
+    {
+      "name": "frame_counter",
+      "offset": 8,
+      "length": 4,
+      "type": "int32",
+      "endianness": "big",
+      "value": 0,
+      "auto_increment": true,
+      "editable": false,
+      "description": "Compteur de trames (incrémente à chaque envoi)"
+    },
+    {
+      "name": "emission_time",
+      "offset": 12,
+      "length": 4,
+      "type": "time_ms",
+      "endianness": "big",
+      "value": 0,
+      "editable": false,
+      "description": "Date d'émission (ms depuis 00h00:00 du jour)"
+    },
+    {
+      "name": "flow_type",
+      "offset": 16,
+      "length": 4,
+      "type": "int32",
+      "endianness": "big",
+      "value": 13,
+      "editable": false,
+      "description": "Type de flux (Toujours égal à 13)"
+    },
+    {
+      "name": "frame_version",
+      "offset": 20,
+      "length": 4,
+      "type": "int32",
+      "endianness": "big",
+      "value": 1,
+      "editable": false,
+      "description": "Version de la trame"
+    },
+    {
+      "name": "trial_number",
+      "offset": 24,
+      "length": 4,
+      "type": "int32",
+      "endianness": "big",
+      "value": 1,
+      "editable": true,
+      "description": "Numéro d'essai (1 à 9)"
+    },
+    {
+      "name": "frame_length",
+      "offset": 28,
+      "length": 4,
+      "type": "int32",
+      "endianness": "big",
+      "value": 40,
+      "editable": false,
+      "description": "Longueur du payload (40 octets + x * bloc de données)"
+    },
+    {
+      "name": "common_date",
+      "offset": 32,
+      "length": 4,
+      "type": "time_ms",
+      "endianness": "big",
+      "value": 0,
+      "editable": false,
+      "description": "Date commune aux paramètres (ms depuis 00h00:00)"
+    },
+    {
+      "name": "common_validity",
+      "offset": 36,
+      "length": 4,
+      "type": "boolean",
+      "endianness": "big",
+      "value": 1,
+      "editable": true,
+      "description": "Validité commune (0 ou 1)"
+    }
+  ]
+}
