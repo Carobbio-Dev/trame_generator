@@ -19,3 +19,8 @@ payload JSON: {"value": "M001"}
 
 payload JSON: {"fileName": "frame_config.json"}
 
+- modifier le port de l'émetteur (lorsqu'il est arrêté):
+
+<i>localhost:5050/api/v1/senders/:id/port</i> ou <i>localhost:5050/api/v1/port</i>
+
+payload JSON: {"port": 6005}
