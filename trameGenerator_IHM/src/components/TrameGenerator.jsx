@@ -324,8 +324,14 @@ export default function TrameGenerator() {
             {templates.length > 0 ? (
               <select
                 value={fileTitle}
+                disabled={generatorState === 1}
                 onChange={(e) => handleSelectTemplate(e.target.value)}
-                className="bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded px-2 py-1 text-sm font-semibold text-black dark:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`border rounded px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  generatorState === 1
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed border-gray-300 dark:border-gray-600"
+                    : "bg-white dark:bg-gray-800 text-black dark:text-white cursor-pointer border-gray-400 dark:border-gray-600"
+                }`}
+                title={generatorState === 1 ? "Arrêtez l'émetteur pour changer de template" : "Sélectionnez une description de trame"}
               >
                 {templates.map((tpl) => (
                   <option key={tpl} value={tpl}>
@@ -335,6 +341,9 @@ export default function TrameGenerator() {
               </select>
             ) : (
               <p>{fileTitle}</p>
+            )}
+            {generatorState === 1 && (
+              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400 font-medium">(Vérouillé)</span>
             )}
           </div>
 
