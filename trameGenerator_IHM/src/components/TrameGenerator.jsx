@@ -1,4 +1,3 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import EditableField from "./EditableField";
 import BooleanField from "./BooleanField";
@@ -342,9 +341,6 @@ export default function TrameGenerator() {
             ) : (
               <p>{fileTitle}</p>
             )}
-            {generatorState === 1 && (
-              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400 font-medium">(Vérouillé)</span>
-            )}
           </div>
 
           <div className="flex flex-row items-center">
@@ -367,9 +363,6 @@ export default function TrameGenerator() {
               }`}
               title={generatorState === 1 ? "Arrêtez l'émetteur pour modifier le port" : "Entrez le port UDP"}
             />
-            {generatorState === 1 && (
-              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400 font-medium">(Vérouillé)</span>
-            )}
           </div>
         </div>
         <hr className="m-2 border-gray-500 border-1" />
