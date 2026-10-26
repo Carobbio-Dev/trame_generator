@@ -488,6 +488,14 @@ export class FrameGenerator {
       const sender = this.senders.get(req.params.id);
       if (!sender) return res.status(404).json({ success: false, error: 'Émetteur introuvable' });
 
+      if (sender.running) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({
+          success: false,
+          error: "Impossible de changer de configuration quand l'émetteur est en cours d'exécution"
+        }));
+      }
+
       try {
         const body = await readBody(req);
         const requestedFile = body.fileName || body.filename || body.template || body.configPath;
@@ -505,12 +513,7 @@ export class FrameGenerator {
           return res.end(JSON.stringify({ success: false, error: 'Fichier introuvable' }));
         }
 
-        const wasRunning = sender.running;
-        if (wasRunning) sender.stop();
-
         sender.loadConfig(targetPath);
-
-        if (wasRunning) sender.start();
 
         res.statusCode = 200;
         res.end(JSON.stringify({
@@ -631,6 +634,14 @@ export class FrameGenerator {
       const sender = this.getDefaultSender();
       if (!sender) return res.status(404).json({ success: false, error: 'Émetteur introuvable' });
 
+      if (sender.running) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({
+          success: false,
+          error: "Impossible de changer de configuration quand l'émetteur est en cours d'exécution"
+        }));
+      }
+
       try {
         const body = await readBody(req);
         const requestedFile = body.fileName || body.filename || body.template || body.configPath;
@@ -648,12 +659,7 @@ export class FrameGenerator {
           return res.end(JSON.stringify({ success: false, error: 'Fichier introuvable' }));
         }
 
-        const wasRunning = sender.running;
-        if (wasRunning) sender.stop();
-
         sender.loadConfig(targetPath);
-
-        if (wasRunning) sender.start();
 
         res.statusCode = 200;
         res.end(JSON.stringify({
