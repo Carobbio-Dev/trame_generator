@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState } from "react";
 import EditableField from "./EditableField";
 import BooleanField from "./BooleanField";
@@ -7,6 +8,7 @@ import SlideBar from "./SlideBar";
 export default function TrameGenerator() {
   const [senders, setSenders] = useState([]);
   const [activeSenderId, setActiveSenderId] = useState("");
+  const [activePort, setActivePort] = useState(6000);
   const [fileTitle, setFileTitle] = useState("");
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,11 @@ export default function TrameGenerator() {
         currentId = sendersList.length > 0 ? sendersList[0].id : "";
       }
       setActiveSenderId(currentId);
+
+      const activeSender = sendersList.find(s => s.id === currentId);
+      if (activeSender) {
+        setActivePort(activeSender.port);
+      }
 
       if (currentId) {
         await loadSenderData(currentId);
@@ -91,6 +98,10 @@ export default function TrameGenerator() {
     setActiveSenderId(senderId);
     setFieldUpdate({});
     await loadSenderData(senderId);
+    const activeSender = senders.find(s => s.id === senderId);
+    if (activeSender) {
+      setActivePort(activeSender.port);
+    }
   }
 
   async function handleAddSender(templateName) {
@@ -160,7 +171,6 @@ export default function TrameGenerator() {
     } catch (err) {
       setError(err);
     }
-    await response.json();
   }
 
   async function handleClickStopAll() {
@@ -186,6 +196,28 @@ export default function TrameGenerator() {
       if (result.fileName) setFileTitle(result.fileName);
       if (result.fields) setFields(result.fields);
       setFieldUpdate({});
+      await refreshData(activeSenderId);
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  async function handleSetPort(value) {
+    if (!activeSenderId) return;
+    const numPort = parseInt(value, 10);
+    if (isNaN(numPort) || numPort < 1 || numPort > 65535) return;
+    try {
+      const response = await fetch(`http://localhost:5050/api/v1/senders/${activeSenderId}/port`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ port: numPort })
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `Erreur HTTP: ${response.status}`);
+      }
+      const result = await response.json();
+      setActivePort(result.port);
       await refreshData(activeSenderId);
     } catch (err) {
       setError(err);
@@ -240,7 +272,7 @@ export default function TrameGenerator() {
                 }`}
                 title={sender.running ? "En cours d'envoi" : "Arrêté"}
               />
-              <span>{`Émetteur ${idx + 1} (${sender.fileName})`}</span>
+              <span>{`Émetteur ${idx + 1} (${sender.fileName}) [:${sender.port}]`}</span>
               {senders.length > 1 && (
                 <button
                   onClick={(e) => handleDeleteSender(sender.id, e)}
@@ -286,25 +318,49 @@ export default function TrameGenerator() {
       </div>
 
       <div className="h-[225px] shrink-0">
-        <div className="w-full flex flex-row items-center p-1">
-          <h1 className="mr-2 font-bold underline">Nom du fichier de description de trame: </h1>
-          {templates.length > 0 ? (
-            <select
-              value={fileTitle}
-              onChange={(e) => handleSelectTemplate(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded px-2 py-1 text-sm font-semibold text-black dark:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {templates.map((tpl) => (
-                <option key={tpl} value={tpl}>
-                  {tpl}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <p>{fileTitle}</p>
-          )}
-          <div className=" absolute right-0 top-1.5">
-            <ThemeToogle />
+        <div className="w-full flex flex-row items-center p-1 space-x-6">
+          <div className="flex flex-row items-center">
+            <h1 className="mr-2 font-bold underline">Nom du fichier de description de trame: </h1>
+            {templates.length > 0 ? (
+              <select
+                value={fileTitle}
+                onChange={(e) => handleSelectTemplate(e.target.value)}
+                className="bg-white dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded px-2 py-1 text-sm font-semibold text-black dark:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {templates.map((tpl) => (
+                  <option key={tpl} value={tpl}>
+                    {tpl}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p>{fileTitle}</p>
+            )}
+          </div>
+
+          <div className="flex flex-row items-center">
+            <h1 className="mr-2 font-bold underline">Port UDP: </h1>
+            <input
+              type="number"
+              min="1"
+              max="65535"
+              value={activePort}
+              disabled={generatorState === 1}
+              onChange={(e) => setActivePort(e.target.value)}
+              onBlur={(e) => handleSetPort(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSetPort(e.target.value);
+              }}
+              className={`w-20 px-2 py-0.5 border rounded text-sm font-semibold ${
+                generatorState === 1
+                  ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed border-gray-300 dark:border-gray-600"
+                  : "bg-white dark:bg-gray-800 text-black dark:text-white border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              }`}
+              title={generatorState === 1 ? "Arrêtez l'émetteur pour modifier le port" : "Entrez le port UDP"}
+            />
+            {generatorState === 1 && (
+              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400 font-medium">(Vérouillé)</span>
+            )}
           </div>
         </div>
         <hr className="m-2 border-gray-500 border-1" />

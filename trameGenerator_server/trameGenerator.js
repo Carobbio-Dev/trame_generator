@@ -433,6 +433,36 @@ export class FrameGenerator {
       }
     });
 
+    app.put('/api/v1/senders/:id/port', async (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      const sender = this.senders.get(req.params.id);
+      if (!sender) return res.status(404).json({ success: false, error: 'Émetteur introuvable' });
+
+      if (sender.running) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({
+          success: false,
+          error: "Impossible de modifier le port quand l'émetteur est en cours d'exécution"
+        }));
+      }
+
+      try {
+        const body = await readBody(req);
+        const newPort = parseInt(body.port || body.value, 10);
+        if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+          res.statusCode = 400;
+          return res.end(JSON.stringify({ success: false, error: 'Port invalide (1-65535)' }));
+        }
+
+        sender.port = newPort;
+        res.statusCode = 200;
+        res.end(JSON.stringify({ success: true, port: sender.port, sender: sender.getSummary() }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
     app.put('/api/v1/senders/:id/period', async (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       const sender = this.senders.get(req.params.id);
@@ -542,6 +572,36 @@ export class FrameGenerator {
         const ok = sender.setFieldValue(fieldName, value);
         res.statusCode = ok ? 200 : 400;
         res.end(JSON.stringify({ success: ok, field: fieldName, value }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
+    app.put('/api/v1/port', async (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      const sender = this.getDefaultSender();
+      if (!sender) return res.status(404).json({ success: false, error: 'Émetteur introuvable' });
+
+      if (sender.running) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({
+          success: false,
+          error: "Impossible de modifier le port quand l'émetteur est en cours d'exécution"
+        }));
+      }
+
+      try {
+        const body = await readBody(req);
+        const newPort = parseInt(body.port || body.value, 10);
+        if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+          res.statusCode = 400;
+          return res.end(JSON.stringify({ success: false, error: 'Port invalide (1-65535)' }));
+        }
+
+        sender.port = newPort;
+        res.statusCode = 200;
+        res.end(JSON.stringify({ success: true, port: sender.port }));
       } catch (err) {
         res.statusCode = 400;
         res.end(JSON.stringify({ success: false, error: err.message }));
