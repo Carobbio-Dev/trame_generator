@@ -1,4 +1,3 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import EditableField from "./EditableField";
 import BooleanField from "./BooleanField";
@@ -161,6 +160,7 @@ export default function TrameGenerator() {
     } catch (err) {
       setError(err);
     }
+    await response.json();
   }
 
   async function handleClickStopAll() {
@@ -303,6 +303,9 @@ export default function TrameGenerator() {
           ) : (
             <p>{fileTitle}</p>
           )}
+          <div className=" absolute right-0 top-1.5">
+            <ThemeToogle />
+          </div>
         </div>
         <hr className="m-2 border-gray-500 border-1" />
         <div className="w-full flex flex-col">
