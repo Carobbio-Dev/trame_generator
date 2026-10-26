@@ -1,4 +1,3 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import EditableField from "./EditableField";
 import BooleanField from "./BooleanField";
@@ -146,7 +145,7 @@ export default function TrameGenerator() {
     if(!response.ok){
       throw new Error(`Erreur HTTP: ${response.status}`);
     }
-    const result = await response.json();
+    await response.json();
   }
 
 
@@ -173,7 +172,7 @@ export default function TrameGenerator() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden p-1">
-      <div className="h-[225px] shrink-0">
+      <div className="h-[232px] shrink-0">
         <div className="w-full flex flex-row items-center p-1">
           <h1 className="mr-2 font-bold underline">Nom du fichier de desciption de trame: </h1>
           {templates.length > 0 ? (
@@ -191,7 +190,7 @@ export default function TrameGenerator() {
           ) : (
             <p>{fileTitle}</p>
           )}
-          <div className="ml-auto">
+          <div className=" absolute right-0 top-1.5">
             <ThemeToogle />
           </div>
         </div>

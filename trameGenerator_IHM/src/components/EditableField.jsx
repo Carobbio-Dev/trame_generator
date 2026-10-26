@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 
 export default function EditableField({
     value,
@@ -27,8 +28,9 @@ export default function EditableField({
     }
 
     function handleSave(){
+        var tmp = draft.replace(/ /g, ''); //suppression des espaces
         if(edited && type == "int32"){
-                var tmp = draft.replace(/ /g, ''); //suppression des espaces
+            
             if(/^-?\d+(\.\d+)?$/.test(tmp)){
                 onSave(enOctets4(tmp), field);
                 setBgColor("bg-green-100 dark:bg-green-900");
@@ -38,7 +40,6 @@ export default function EditableField({
             }
             edited = false
         } else if(edited && type == "string"){
-            var tmp = draft.replace(/ /g, ''); //suppression des espaces
             if(typeof tmp === 'string' && tmp.length === 4){
                 onSave(tmp, field);
                 setBgColor("bg-green-100 dark:bg-green-900");
@@ -69,8 +70,15 @@ export default function EditableField({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            className={`w-full ml-3 p-3 border-b border-gray-100 ${bgColor} dark:bg-gray-800 transition-colors duration-300`}/>
+            className={`w-full p-3 border-b border-gray-100 ${bgColor} dark:bg-gray-800 transition-colors duration-300`}/>
         </div>
     
   );
 }
+
+EditableField.propTypes = {
+    value: PropTypes.any,
+    onSave: PropTypes.func,
+    type: PropTypes.string,
+    field: PropTypes.string
+};
